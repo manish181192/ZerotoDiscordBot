@@ -7,6 +7,7 @@ test_server_link = "https://discord.gg/kN8vwQz"
 
 class DiscordBOT(discord.Client):
 
+
     async def on_ready(self):
         print('Logged in as')
         print(self.user.name)
@@ -48,12 +49,13 @@ class DiscordBOT(discord.Client):
 
     async def bothelp(self, message):
         await message.channel.send(
-            "To add a current reading: @ReadingListBOT -new {title} {link} {date}. Adding a discussion date is "
-            "optional. ReadingListBOT will then post a clean copy of your post, pin it, and post it in the appropriate"
+            "To add a current reading use: @ReadingListBOT -new {title} {link} {date}. Adding a discussion date is "
+            "optional. ReadingListBOT will then post a clean copy of your post, pin it, and post it in the appropriate "
             "reading channels.\n"
             # "To add a link to Zotero: @ReadingListBOT -zotero {link}. arxiv links are prefered.\n"
             "To edit a mistaken entry, edit the original entry and it will update automatically.\n"
-            "New articles can't be posted from the general category or lobby channels")
+            "New articles can't be posted from the general category, lobby channels, or "
+            "directly in reading group channels. Use this command from the channel the reading is being discussed in.")
 
     async def new_article(self, message):
 
@@ -79,16 +81,13 @@ class DiscordBOT(discord.Client):
                 await message.channel.send("I don't understand. For instructions, post @readerbot -help")
                 self.edit_log[message.id] = []
                 return
-            # this determines if it is a new message or not. the switch has to be inside this function to avoid
-            # cluttering the on_message and on_message_edit functions
 
             # checks if the message is present in the edit log, and if so that it's not empty (a broken post)
             if message.id in self.edit_log and self.edit_log[message.id] != []:
                 children_messages = self.edit_log[message.id]
-                new_local_message = await children_messages[0].edit(content=output)
-                new_global_message = await children_messages[1].edit(content=output)
-                new_pin_message = await children_messages[2].edit(content=pin_output)
-                self.edit_log[message.id] = [new_local_message, new_global_message, new_pin_message]
+                await children_messages[0].edit(content=output)
+                await children_messages[1].edit(content=output)
+                await children_messages[2].edit(content=pin_output)
             else:
                 local_message = await self.reading_list_groups[message.channel.category].send(output)
                 global_message = await self.general_reading_list.send(output)
@@ -97,7 +96,7 @@ class DiscordBOT(discord.Client):
                 self.edit_log[message.id] = [local_message, global_message, pin_message]
         else:
             await message.delete()
-            await message.channel.send("Cannot post readings in the GENERAL category or lobbies. \n"
+            await message.channel.send("Cannot post readings in the GENERAL category or lobbies. "
                                        "Please select a reading group channel instead")
 
     async def zotero(self):
