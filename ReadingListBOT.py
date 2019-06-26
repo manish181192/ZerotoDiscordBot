@@ -5,9 +5,7 @@ import pyzotero
 token = XXXXXX
 test_server_link = "https://discord.gg/kN8vwQz"
 
-
 class DiscordBOT(discord.Client):
-
 
     async def on_ready(self):
         print('Logged in as')
@@ -24,24 +22,27 @@ class DiscordBOT(discord.Client):
                 else:
                     self.reading_list_groups[channel.category] = channel
 
-# TODO: set mods only, make syntax more general (make double spaces acceptable)
-
     async def on_message(self, message: discord.Message):
         if message.author.id == self.user.id:
             return
+        if "mod" not in [y.name.lower() for y in message.author.roles]:
+            await message.channel.send("You must be a mod to add a link to the reading list.")
+            await message.delete()
+            return
         if self.user in message.mentions:
-            message_list = message.content.split(" ")
+            message_list = ' '.join(message.content.split()).split(" ")
             try:
                 feature = self.features[message_list[1]]
                 await feature(message)
 
             except KeyError:
+
                 await message.channel.send("I don't understand. For instructions, try @readerbot -help")
 
     async def on_message_edit(self, old_message, new_message):
 
         if self.user in new_message.mentions:
-            message_list = new_message.content.split(" ")
+            message_list = ' '.join(new_message.content.split()).split(" ")
             feature = self.features[message_list[1]]
             await feature(new_message)
 
@@ -55,6 +56,7 @@ class DiscordBOT(discord.Client):
             "New articles can't be posted from the general category or lobby channels")
 
     async def new_article(self, message):
+
         if message.channel.category.name.lower() != "general" \
                 and "lobby" not in message.channel.name.lower() \
                 and "general" not in message.channel.name.lower() \
@@ -62,7 +64,6 @@ class DiscordBOT(discord.Client):
             article = message.content.split("-new")[1]
             article_without_parens = re.sub('\(.+?\)', '', article)
             text_in_brackets = re.findall('{(.+?)}', article_without_parens)
-
             if len(text_in_brackets) == 2:
                 title = text_in_brackets[0]
                 link = text_in_brackets[1]
@@ -107,7 +108,6 @@ class DiscordBOT(discord.Client):
         # TODO When posts are made from new categories and channels, add them as approrpriate
 
         pass
-
 
 client = DiscordBOT()
 client.run(token)
